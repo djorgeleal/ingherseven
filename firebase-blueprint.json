@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "TemperedGlassRef": {
+      "title": "TemperedGlassRef",
+      "description": "Referencia técnica de compatibilidad de vidrio templado para teléfonos móviles",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID único de la referencia"
+        },
+        "brand": {
+          "type": "string",
+          "description": "Marca del teléfono"
+        },
+        "primaryModel": {
+          "type": "string",
+          "description": "Modelo principal del vidrio"
+        },
+        "compatibleModels": {
+          "type": "array",
+          "description": "Lista de modelos de teléfono compatibles"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Notas u observaciones técnicas"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Fecha y hora ISO de última actualización"
+        }
+      },
+      "required": ["id", "brand", "primaryModel", "compatibleModels", "updatedAt"]
+    },
+    "AuthorizedUser": {
+      "title": "AuthorizedUser",
+      "description": "Usuario autorizado para crear y modificar referencias de vidrios templados",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Dirección de correo electrónico autorizada"
+        },
+        "role": {
+          "type": "string",
+          "description": "Rol de autorización (admin / editor)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Fecha y hora ISO de registro del usuario"
+        }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/glassReferences/{refId}": {
+      "schema": "TemperedGlassRef",
+      "description": "Colección de referencias de vidrios templados y sus modelos compatibles"
+    },
+    "/authorizedUsers/{userDocId}": {
+      "schema": "AuthorizedUser",
+      "description": "Lista de correos autorizados con permisos para crear y modificar referencias"
+    }
+  }
+}

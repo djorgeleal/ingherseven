@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.\\@]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAuthorizedEmail() {
+      return isSignedIn() && (
+        request.auth.token.email == 'djorgeleal24@gmail.com' ||
+        request.auth.token.email == 'ingherseven@gmail.com' ||
+        exists(/databases/$(database)/documents/authorizedUsers/$(request.auth.token.email))
+      );
+    }
+
+    function isValidGlassRef(data) {
+      return data.keys().hasAll(['id', 'brand', 'primaryModel', 'compatibleModels', 'updatedAt']) &&
+             data.keys().hasOnly(['id', 'brand', 'primaryModel', 'compatibleModels', 'notes', 'updatedAt']) &&
+             data.id is string && isValidId(data.id) &&
+             data.brand is string && data.brand.size() > 0 && data.brand.size() <= 60 &&
+             data.primaryModel is string && data.primaryModel.size() > 0 && data.primaryModel.size() <= 120 &&
+             data.compatibleModels is list && data.compatibleModels.size() > 0 && data.compatibleModels.size() <= 100 &&
+             data.compatibleModels[0] is string &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+             data.updatedAt is string && data.updatedAt.size() <= 50;
+    }
+
+    // Authorized Users Collection
+    match /authorizedUsers/{userDocId} {
+      allow read: if true;
+      allow write: if isAuthorizedEmail() || !exists(/databases/$(database)/documents/authorizedUsers/$(userDocId));
+    }
+
+    // Glass References Collection
+    // Public search/read, but create/update/delete restricted strictly to authorized users
+    match /glassReferences/{refId} {
+      allow read: if true;
+      allow create: if isAuthorizedEmail() && isValidId(refId) && isValidGlassRef(incoming()) && incoming().id == refId;
+      allow update: if isAuthorizedEmail() && isValidId(refId) && isValidGlassRef(incoming()) && incoming().id == refId;
+      allow delete: if isAuthorizedEmail() && isValidId(refId);
+    }
+
+    // Test connection doc
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

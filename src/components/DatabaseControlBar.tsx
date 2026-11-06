@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { BrandFilter, GlassType, TemperedGlassRef } from '../types/glass';
+import { BrandFilter, TemperedGlassRef } from '../types/glass';
 import { 
   Search, 
   Plus, 
@@ -8,9 +8,10 @@ import {
   RotateCcw, 
   LayoutGrid, 
   Table as TableIcon,
-  SlidersHorizontal,
-  Layers,
-  Database
+  Database,
+  Cloud,
+  CloudCheck,
+  RefreshCw
 } from 'lucide-react';
 
 interface DatabaseControlBarProps {
@@ -18,31 +19,58 @@ interface DatabaseControlBarProps {
   onSearchChange: (query: string) => void;
   brandFilter: BrandFilter;
   onBrandFilterChange: (brand: BrandFilter) => void;
-  typeFilter: string;
-  onTypeFilterChange: (type: string) => void;
   viewMode: 'grid' | 'table';
   onViewModeChange: (mode: 'grid' | 'table') => void;
   onAddNew: () => void;
   onExportJson: () => void;
   onImportJson: (data: TemperedGlassRef[]) => void;
   onResetFactory: () => void;
+  isFirebaseConnected?: boolean;
+  isSyncingFirebase?: boolean;
+  onSyncAllToFirebase?: () => void;
+  canAddReference?: boolean;
+  isLoggedIn?: boolean;
 }
 
-const BRANDS: BrandFilter[] = ['Todas', 'Apple', 'Samsung', 'Xiaomi', 'Motorola', 'Realme', 'Honor'];
+const BRANDS: BrandFilter[] = [
+  'Todas',
+  'Apple',
+  'Samsung',
+  'Xiaomi',
+  'Motorola',
+  'Oppo',
+  'Realme',
+  'Vivo',
+  'Nokia',
+  'Sony',
+  'Poco',
+  'Alcatel',
+  'BLU',
+  'Lenovo',
+  'LG',
+  'Tecno',
+  'Honor',
+  'Huawei',
+  'Infinix',
+  'Otras'
+];
 
 export const DatabaseControlBar: React.FC<DatabaseControlBarProps> = ({
   searchQuery,
   onSearchChange,
   brandFilter,
   onBrandFilterChange,
-  typeFilter,
-  onTypeFilterChange,
   viewMode,
   onViewModeChange,
   onAddNew,
   onExportJson,
   onImportJson,
   onResetFactory,
+  isFirebaseConnected = false,
+  isSyncingFirebase = false,
+  onSyncAllToFirebase,
+  canAddReference = false,
+  isLoggedIn = false,
 }) => {
   const [showDbMenu, setShowDbMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,7 +83,7 @@ export const DatabaseControlBar: React.FC<DatabaseControlBarProps> = ({
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target?.result as string);
-        if (Array.isArray(json) && json.length > 0 && json[0].sku) {
+        if (Array.isArray(json) && json.length > 0 && json[0].primaryModel) {
           onImportJson(json);
           setShowDbMenu(false);
         } else {
@@ -72,7 +100,7 @@ export const DatabaseControlBar: React.FC<DatabaseControlBarProps> = ({
 
   return (
     <div className="space-y-3 mb-4">
-      {/* Upper row: Search, Filter dropdowns, View toggles & Add button */}
+      {/* Upper row: Search, View toggles & Add button */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
         {/* Search in Catalog */}
         <div className="relative flex-1">
@@ -83,27 +111,13 @@ export const DatabaseControlBar: React.FC<DatabaseControlBarProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Buscar por código SKU, modelo, pantalla o gaveta..."
+            placeholder="Buscar por modelo base o compatibilidad..."
             className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors font-mono"
           />
         </div>
 
-        {/* Glass Type Filter */}
-        <div className="flex items-center gap-2">
-          <select
-            value={typeFilter}
-            onChange={(e) => onTypeFilterChange(e.target.value)}
-            className="px-2.5 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 focus:outline-none focus:border-cyan-400 font-sans"
-          >
-            <option value="Todos">Todos los Tipos de Vidrio</option>
-            <option value="Vidrio 9D/11D Full Glue">Vidrio 9D/11D</option>
-            <option value="Cerámico Flexible">Cerámico Flexible</option>
-            <option value="Privacidad Antiespía">Privacidad Antiespía</option>
-            <option value="Mate Gamer Antihuellas">Mate Gamer</option>
-            <option value="Cristal Transparente 2.5D">Cristal 2.5D</option>
-            <option value="UV Líquido Curvo 3D">UV Curvo 3D</option>
-          </select>
-
+        {/* View toggles & DB menu & Add button */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
           {/* View Mode Switcher (Grid vs Table) */}
           <div className="flex items-center bg-slate-900 p-0.5 rounded-lg border border-slate-700">
             <button
@@ -130,72 +144,106 @@ export const DatabaseControlBar: React.FC<DatabaseControlBarProps> = ({
             </button>
           </div>
 
-          {/* Database Operations Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowDbMenu(!showDbMenu)}
-              className="p-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-white text-xs flex items-center gap-1 transition-colors cursor-pointer"
-              title="Opciones de Base de Datos"
-            >
-              <Database className="w-3.5 h-3.5 text-cyan-400" />
-            </button>
-
-            {showDbMenu && (
-              <div 
-                className="absolute right-0 mt-1 w-52 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1.5 z-40 text-xs font-mono space-y-1"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="px-2 py-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
-                  Base de Datos (JSON)
-                </div>
-
+          {/* Firebase Cloud Sync Button & Database Menu - Only visible when logged in */}
+          {isLoggedIn && (
+            <div className="flex items-center gap-1.5">
+              {onSyncAllToFirebase && (
                 <button
-                  onClick={() => {
-                    onExportJson();
-                    setShowDbMenu(false);
-                  }}
-                  className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center gap-2 transition-colors cursor-pointer"
+                  onClick={onSyncAllToFirebase}
+                  disabled={isSyncingFirebase}
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-cyan-800/60 hover:border-cyan-400 text-cyan-300 text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Sincronizar toda la base de datos a Firebase Firestore"
                 >
-                  <Download className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Exportar Copia (.json)</span>
+                  {isSyncingFirebase ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                  ) : (
+                    <Cloud className="w-3.5 h-3.5 text-cyan-400" />
+                  )}
+                  <span className="hidden sm:inline font-mono">
+                    {isSyncingFirebase ? 'Guardando en la Nube...' : 'Guardar en Firebase'}
+                  </span>
+                  {isFirebaseConnected && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" title="Firebase Conectado" />
+                  )}
+                </button>
+              )}
+
+              <div className="relative">
+                <button
+                  onClick={() => setShowDbMenu(!showDbMenu)}
+                  className="p-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-white text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Opciones de Base de Datos"
+                >
+                  <Database className="w-3.5 h-3.5 text-cyan-400" />
                 </button>
 
-                <button
-                  onClick={() => {
-                    fileInputRef.current?.click();
-                  }}
-                  className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <Upload className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Importar Copia (.json)</span>
-                </button>
+                {showDbMenu && (
+                  <div 
+                    className="absolute right-0 mt-1 w-60 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1.5 z-40 text-xs font-mono space-y-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="px-2 py-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 flex items-center justify-between">
+                      <span>Base de Datos</span>
+                      <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        Firebase Activo
+                      </span>
+                    </div>
 
-                <div className="border-t border-slate-800 my-1" />
+                    {onSyncAllToFirebase && (
+                      <button
+                        onClick={() => {
+                          onSyncAllToFirebase();
+                          setShowDbMenu(false);
+                        }}
+                        disabled={isSyncingFirebase}
+                        className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-slate-800 text-cyan-300 flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <CloudCheck className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Subir Todo a Firebase</span>
+                      </button>
+                    )}
 
-                <button
-                  onClick={() => {
-                    if (confirm('¿Restablecer el catálogo con los vidrios compatibles de fábrica?')) {
-                      onResetFactory();
-                      setShowDbMenu(false);
-                    }
-                  }}
-                  className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-rose-950/40 text-rose-300 flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Restablecer Fábrica</span>
-                </button>
+                    <button
+                      onClick={() => {
+                        onExportJson();
+                        setShowDbMenu(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Exportar Copia (.json)</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        fileInputRef.current?.click();
+                      }}
+                      className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Importar Copia (.json)</span>
+                    </button>
+
+                    <div className="border-t border-slate-800 my-1" />
+
+                    <button
+                      onClick={() => {
+                        if (confirm('¿Restablecer el catálogo con los vidrios compatibles de fábrica?')) {
+                          onResetFactory();
+                          setShowDbMenu(false);
+                        }
+                      }}
+                      className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-rose-950/40 text-rose-300 flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Restablecer Fábrica</span>
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Add New Glass Reference Button */}
-          <button
-            onClick={onAddNew}
-            className="px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-cyan-950/40 whitespace-nowrap shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nueva Referencia</span>
-          </button>
+            </div>
+          )}
         </div>
       </div>
 
