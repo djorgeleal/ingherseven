@@ -14,11 +14,9 @@ import {
   Search, 
   CheckCircle,
   Info,
-  Cloud,
   LogIn,
   LogOut,
   User as UserIcon,
-  Lock,
   Plus
 } from 'lucide-react';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -404,18 +402,6 @@ export default function App() {
 
         {/* Zone 3: Primary Action & Auth Management */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Cloud Status Indicator (Hidden on small mobile screens to preserve space) */}
-          <div 
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300"
-            title={isFirebaseConnected ? 'Conectado a Firebase Firestore (Sincronización activa)' : 'Conectando a Firebase...'}
-          >
-            <Cloud className={`w-3.5 h-3.5 ${isFirebaseConnected ? 'text-cyan-400' : 'text-amber-400 animate-pulse'}`} />
-            <span className="flex items-center gap-1">
-              <span className={`w-1.5 h-1.5 rounded-full ${isFirebaseConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-              <span>{isFirebaseConnected ? 'Firebase' : 'Conectando'}</span>
-            </span>
-          </div>
-
           {/* User Auth Profile or Login Button */}
           {currentUser ? (
             <div className="flex items-center gap-1 sm:gap-2 bg-slate-900/90 border border-slate-800 px-1.5 sm:px-2.5 py-1 rounded-lg text-xs font-mono">
