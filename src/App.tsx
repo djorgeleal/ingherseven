@@ -174,9 +174,18 @@ export default function App() {
           showToast(`Sesión iniciada con ${user.email} (Solo lectura: sin permisos de edición)`);
         }
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('Login error:', e);
-      showToast('No se pudo iniciar sesión con Google');
+      const err = e as { code?: string; message?: string };
+      if (err?.code === 'auth/unauthorized-domain') {
+        showToast('Dominio no autorizado en Firebase. Agrega tu dominio de Vercel en la Consola de Firebase.');
+      } else if (err?.code === 'auth/popup-blocked') {
+        showToast('Ventana emergente bloqueada. Permite las ventanas emergentes en tu navegador.');
+      } else if (err?.code === 'auth/popup-closed-by-user') {
+        showToast('Inicio de sesión cancelado.');
+      } else {
+        showToast('No se pudo iniciar sesión con Google');
+      }
     }
   };
 
